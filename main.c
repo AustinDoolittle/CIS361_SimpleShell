@@ -14,6 +14,18 @@
 
 #define SIZE 64
 
+int sh_cd(char **args)
+{
+	if(args[1] == NULL){
+		perror("cd needs a directory");
+	}else{
+		if(chdir(args[1]) != 0){
+			perror("not a directory");
+		}
+	}
+	return 1;
+}
+
 char *sh_read_line(void)
 {
 	char *line = NULL;
@@ -86,7 +98,12 @@ void sh_loop()
 		printf(">");
 		line = sh_read_line();
 		args = sh_split_line(line);
-		status = sh_execute(args);
+
+		if(strcmp(args[0], "cd") == 0){
+			status = sh_cd(args);
+		}else{
+			status = sh_execute(args);
+		}
 
 		free(line);
 		free(args);
