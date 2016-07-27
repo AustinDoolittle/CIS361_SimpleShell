@@ -15,7 +15,7 @@
 #define SIZE 64
 
 struct node_struct {
-  char line *;
+  char * line;
   struct node_struct * next;
 };
 
@@ -24,7 +24,24 @@ struct history_struct {
   struct node_struct * head;
 };
 
+int sh_cd(char **args);
+int sh_pwd();
+int sh_exit();
+void intHandler(int sig);
+void config();
+void history_add(char* line);
+void history_print_r(struct node_struct * node, int index);
+int history_print();
+char *sh_read_line(void);
+char **sh_split_line(char *line_org);
+int sh_execute(char **args);
+int sh_process(char ** args);
+int history_select(int index);
+void sh_loop();
+
+
 struct history_struct * history;
+
 
 int sh_cd(char **args)
 {
@@ -63,49 +80,35 @@ void config()
 
   history = malloc(sizeof(struct history_struct));
   history->size = 0;
-  history->head = null;
+  history->head = NULL;
 }
 
 void history_add(char* line)
 {
-  struct history_struct * new = malloc(sizeof(struct history_struct));
+  struct node_struct * new = malloc(sizeof(struct node_struct));
   new->line = line;
   new->next = history->head;
   history->head = new;
   history->size++;
+
 }
 
-void history_print()
+void history_print_r(struct node_struct * node, int index)
 {
-  history_print(history->head, 1);
-}
-
-void history_print(struct node_struct * node, int index)
-{
-  if(node == null) {
+  if(node == NULL) {
     return;
   }
   else {
-    history_print(node->next, index + 1);
+    history_print_r(node->next, index + 1);
     printf("%d\t%s\n", index, node->line);
   }
 }
 
-void history_select(int index) {
-  if(index >= history->size || index <= 0) {
-    printf("\nInvalid history value\n");
-  }
+int history_print()
+{
 
-  index = index - 1;
-
-  struct node_struct * temp = history->head;
-
-  for(int i = 0; i < index) {
-    temp = temp->next;
-  }
-
-  char** args = sh_split_line(temp->line);
-  sh_execute(args);
+  history_print_r(history->head, 1);
+  return 1;
 }
 
 char *sh_read_line(void)
@@ -116,8 +119,10 @@ char *sh_read_line(void)
 	return line;
 }
 
-char **sh_split_line(char *line)
+char **sh_split_line(char *line_org)
 {
+  char * line = malloc(sizeof(*line_org));
+  strcpy(line, line_org);
 	int bufsize = SIZE, position = 0;
 	char **tokens = malloc(bufsize * sizeof(char*));
 	char *token;
@@ -181,6 +186,52 @@ int sh_execute(char **args)
 	return 1;
 }
 
+int sh_process(char ** args) {
+  int status = 0;
+
+  if(strcmp(args[0], "cd") == 0){
+    status = sh_cd(args);
+  }
+  else if(strcmp(args[0], "pwd") == 0){
+    status = sh_pwd();
+  }
+  else if(strcmp(args[0], "exit") == 0){
+    status = sh_exit();
+  }
+  else if(strcmp(args[0], "history") == 0) {
+    status = history_print();
+  }
+  else if(args[0][0] == '!') {
+    int i = atol(args[1]);
+
+    status = history_select(i);
+  }
+  else{
+    status = sh_execute(args);
+  }
+
+  return status;
+}
+
+int history_select(int index) {
+  if(index >= history->size || index <= 0) {
+    printf("\nInvalid history value\n");
+  }
+
+  index = index - 1;
+
+  struct node_struct * temp = history->head;
+
+  for(int i = 0; i < index; i++) {
+    temp = temp->next;
+  }
+
+  char** args = sh_split_line(temp->line);
+  sh_process(args);
+  free(args);
+  return 1;
+}
+
 void sh_loop()
 {
 	char *line;
@@ -191,31 +242,13 @@ void sh_loop()
 	{
 		printf(">");
 		line = sh_read_line();
-    history_add(line);
 		args = sh_split_line(line);
 
-		if(strcmp(args[0], "cd") == 0){
-			status = sh_cd(args);
-		}
-		else if(strcmp(args[0], "pwd") == 0){
-			status = sh_pwd();
-		}
-		else if(strcmp(args[0], "exit") == 0){
-			status = sh_exit();
-		}
-    else if(strcmp(args[0], "history") == 0) {
-      status = history_print();
-    }
-    else if(strcmp(args[0][0], "!") == 0) {
-      int i = atol(args[0][1]);
+    status = sh_process(args);
 
-      status = history_select(i);
-    }
-		else{
-			status = sh_execute(args);
-		}
+    line[strlen(line)-1] = '\0';
+    history_add(line);
 
-		free(line);
 		free(args);
 	} while (status);
 }
