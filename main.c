@@ -14,12 +14,14 @@
 
 #define SIZE 64
 
-
+struct node_struct {
+  char line *;
+  struct node_struct * next;
+};
 
 struct history_struct {
   int size;
-  char** lines;
-  int mallocSize;
+  struct node_struct * head;
 };
 
 struct history_struct * history;
@@ -55,22 +57,55 @@ void intHandler(int sig) {
   printf("I'm sorry Dave, I can't do that\n");
 }
 
-void config() {
+void config()
+{
   signal(SIGINT, intHandler);
 
   history = malloc(sizeof(struct history_struct));
   history->size = 0;
-  history->mallocSize = 100;
-  history->lines = malloc(sizeof(char) * SIZE * history->mallocSize);
+  history->head = null;
 }
 
-void history_add(char* line) {
-  if(history->size == history->mallocSize) {
-    history->mallocSize += 100;
-    history->lines = realloc(sizeof(char) * SIZE * history->mallocSize);
+void history_add(char* line)
+{
+  struct history_struct * new = malloc(sizeof(struct history_struct));
+  new->line = line;
+  new->next = history->head;
+  history->head = new;
+  history->size++;
+}
+
+void history_print()
+{
+  history_print(history->head, 1);
+}
+
+void history_print(struct node_struct * node, int index)
+{
+  if(node == null) {
+    return;
+  }
+  else {
+    history_print(node->next, index + 1);
+    printf("%d\t%s\n", index, node->line);
+  }
+}
+
+void history_select(int index) {
+  if(index >= history->size) {
+    printf("\nInvalid history value\n");
   }
 
-  history->lines[history->size] = line;
+  index = index - 1;
+
+  struct node_struct * temp = history->head;
+
+  for(int i = 0; i < index) {
+    temp = temp->next;
+  }
+
+  char** args = sh_split_line(temp->line);
+  sh_execute(args);
 }
 
 char *sh_read_line(void)
@@ -156,6 +191,7 @@ void sh_loop()
 	{
 		printf(">");
 		line = sh_read_line();
+    history_add(line);
 		args = sh_split_line(line);
 
 		if(strcmp(args[0], "cd") == 0){
