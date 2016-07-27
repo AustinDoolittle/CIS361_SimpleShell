@@ -26,6 +26,16 @@ int sh_cd(char **args)
 	return 1;
 }
 
+int sh_pwd()
+{
+	char pwd[1024];
+	if(getcwd(pwd, sizeof(pwd)) == NULL){
+		perror("there was an error getting the cwd");
+	}
+	fprintf(stderr, "%s\n", pwd);
+	return 1;
+}
+
 char *sh_read_line(void)
 {
 	char *line = NULL;
@@ -101,7 +111,11 @@ void sh_loop()
 
 		if(strcmp(args[0], "cd") == 0){
 			status = sh_cd(args);
-		}else{
+		}
+		else if(strcmp(args[0], "pwd") == 0){
+			status = sh_pwd();
+		}
+		else{
 			status = sh_execute(args);
 		}
 
