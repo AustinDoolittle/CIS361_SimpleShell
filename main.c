@@ -92,7 +92,7 @@ void history_print(struct node_struct * node, int index)
 }
 
 void history_select(int index) {
-  if(index >= history->size) {
+  if(index >= history->size || index <= 0) {
     printf("\nInvalid history value\n");
   }
 
@@ -203,6 +203,14 @@ void sh_loop()
 		else if(strcmp(args[0], "exit") == 0){
 			status = sh_exit();
 		}
+    else if(strcmp(args[0], "history") == 0) {
+      status = history_print();
+    }
+    else if(strcmp(args[0][0], "!") == 0) {
+      int i = atol(args[0][1]);
+
+      status = history_select(i);
+    }
 		else{
 			status = sh_execute(args);
 		}
