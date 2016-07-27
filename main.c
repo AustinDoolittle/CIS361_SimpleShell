@@ -16,6 +16,14 @@
 
 
 
+struct history_struct {
+  int size;
+  char** lines;
+  int mallocSize;
+};
+
+struct history_struct * history;
+
 int sh_cd(char **args)
 {
 	if(args[1] == NULL){
@@ -41,6 +49,28 @@ int sh_pwd()
 int sh_exit()
 {
 	exit(1);
+}
+
+void intHandler(int sig) {
+  printf("I'm sorry Dave, I can't do that\n");
+}
+
+void config() {
+  signal(SIGINT, intHandler);
+
+  history = malloc(sizeof(struct history_struct));
+  history->size = 0;
+  history->mallocSize = 100;
+  history->lines = malloc(sizeof(char) * SIZE * history->mallocSize);
+}
+
+void history_add(char* line) {
+  if(history->size == history->mallocSize) {
+    history->mallocSize += 100;
+    history->lines = realloc(sizeof(char) * SIZE * history->mallocSize);
+  }
+
+  history->lines[history->size] = line;
 }
 
 char *sh_read_line(void)
@@ -102,7 +132,7 @@ int sh_execute(char **args)
 				{
 					wpid = waitpid(pid, &status, WUNTRACED);
 					printf("%d\n", status);
-				}	
+				}
 				else{
 					printf("%d\n", pid);
 				}
@@ -148,6 +178,7 @@ void sh_loop()
 
 int main(int argc, char const *argv[])
 {
+  config();
 	sh_loop();
 	return 0;
 }
