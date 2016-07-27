@@ -36,6 +36,11 @@ int sh_pwd()
 	return 1;
 }
 
+int sh_exit()
+{
+	exit(1);
+}
+
 char *sh_read_line(void)
 {
 	char *line = NULL;
@@ -114,6 +119,9 @@ void sh_loop()
 		}
 		else if(strcmp(args[0], "pwd") == 0){
 			status = sh_pwd();
+		}
+		else if(strcmp(args[0], "exit") == 0){
+			status = sh_exit();
 		}
 		else{
 			status = sh_execute(args);
