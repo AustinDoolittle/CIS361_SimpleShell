@@ -14,6 +14,33 @@
 
 #define SIZE 64
 
+int sh_cd(char **args)
+{
+	if(args[1] == NULL){
+		perror("cd needs a directory");
+	}else{
+		if(chdir(args[1]) != 0){
+			perror("not a directory");
+		}
+	}
+	return 1;
+}
+
+int sh_pwd()
+{
+	char pwd[1024];
+	if(getcwd(pwd, sizeof(pwd)) == NULL){
+		perror("there was an error getting the cwd");
+	}
+	fprintf(stderr, "%s\n", pwd);
+	return 1;
+}
+
+int sh_exit()
+{
+	exit(1);
+}
+
 char *sh_read_line(void)
 {
 	char *line = NULL;
@@ -86,7 +113,19 @@ void sh_loop()
 		printf(">");
 		line = sh_read_line();
 		args = sh_split_line(line);
-		status = sh_execute(args);
+
+		if(strcmp(args[0], "cd") == 0){
+			status = sh_cd(args);
+		}
+		else if(strcmp(args[0], "pwd") == 0){
+			status = sh_pwd();
+		}
+		else if(strcmp(args[0], "exit") == 0){
+			status = sh_exit();
+		}
+		else{
+			status = sh_execute(args);
+		}
 
 		free(line);
 		free(args);
