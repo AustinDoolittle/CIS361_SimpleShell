@@ -14,6 +14,8 @@
 
 #define SIZE 64
 
+
+
 int sh_cd(char **args)
 {
 	if(args[1] == NULL){
@@ -95,7 +97,19 @@ int sh_execute(char **args)
 		perror("error forking");
 	} else {
 		do {
-			wpid = waitpid(pid, &status, WUNTRACED);
+			if(args[1] != NULL){
+				if(strcmp(args[(sizeof(args)/sizeof(char))], "-&") != 0)
+				{
+					wpid = waitpid(pid, &status, WUNTRACED);
+					printf("%d\n", status);
+				}	
+				else{
+					printf("%d\n", pid);
+				}
+			}else{
+				wpid = waitpid(pid, &status, WUNTRACED);
+				printf("%d\n", status);
+			}
 		} while (!WIFEXITED(status) && !WIFSIGNALED(status));
 	}
 
