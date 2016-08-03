@@ -121,7 +121,7 @@ char *sh_read_line(void)
 
 char **sh_split_line(char *line_org)
 {
-  char * line = malloc(sizeof(*line_org));
+  char * line = malloc(strlen(line_org) * sizeof(char));
   strcpy(line, line_org);
 	int bufsize = SIZE, position = 0;
 	char **tokens = malloc(bufsize * sizeof(char*));
@@ -216,9 +216,8 @@ int sh_process(char ** args) {
 int history_select(int index) {
   if(index >= history->size || index <= 0) {
     printf("\nInvalid history value\n");
+    return 1;
   }
-
-  index = index - 1;
 
   struct node_struct * temp = history->head;
 
