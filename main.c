@@ -42,6 +42,15 @@ void sh_loop();
 
 struct history_struct * history;
 
+void sh_child_handler(int sig)
+{
+  pid_t pid;
+  int status;
+
+  pid = wait(&status);
+
+  printf("Pid %d exited with a status of %d\n", pid, status);
+}
 
 int sh_cd(char **args)
 {
@@ -157,6 +166,17 @@ int sh_execute(char **args)
 	pid_t pid, wpid;
 	int status;
 
+	signal(SIGCHLD, sh_child_handler);		
+	int size = 0;
+
+	for (int i = 0; i < sizeof(args); ++i)
+	{
+		if (args[i] != NULL)
+		{
+			size++;
+		}
+	}
+
 	pid = fork();
 	if (pid == 0) {
 		if (execvp(args[0], args) == -1) {
@@ -166,21 +186,11 @@ int sh_execute(char **args)
 	} else if (pid < 0) {
 		perror("error forking");
 	} else {
-		do {
-			if(args[1] != NULL){
-				if(strcmp(args[(sizeof(args)/sizeof(char))], "-&") != 0)
-				{
-					wpid = waitpid(pid, &status, WUNTRACED);
-					printf("%d\n", status);
-				}
-				else{
-					printf("%d\n", pid);
-				}
-			}else{
-				wpid = waitpid(pid, &status, WUNTRACED);
-				printf("%d\n", status);
-			}
-		} while (!WIFEXITED(status) && !WIFSIGNALED(status));
+		if(strcmp(args[size-1], "-&") == 0){
+			printf("[%d]\t%s\n", pid, args[0]);
+		}
+		else
+			pause();
 	}
 
 	return 1;
