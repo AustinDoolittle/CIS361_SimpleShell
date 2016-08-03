@@ -14,7 +14,6 @@
 
 #define SIZE 64
 
-<<<<<<< HEAD
 struct node_struct {
   char * line;
   struct node_struct * next;
@@ -42,14 +41,13 @@ void sh_loop();
 
 
 struct history_struct * history;
-=======
+
 void sh_child_handler(int sig)
 {
   pid_t pid;
   int status;
 
   pid = wait(&status);
->>>>>>> 71fcbec... child handler and backgrounding
 
   printf("Pid %d exited with a status of %d\n", pid, status);
 }
@@ -188,29 +186,11 @@ int sh_execute(char **args)
 	} else if (pid < 0) {
 		perror("error forking");
 	} else {
-<<<<<<< HEAD
-		do {
-			if(args[1] != NULL){
-				if(strcmp(args[(sizeof(args)/sizeof(char))], "-&") != 0)
-				{
-					wpid = waitpid(pid, &status, WUNTRACED);
-					printf("%d\n", status);
-				}
-				else{
-					printf("%d\n", pid);
-				}
-			}else{
-				wpid = waitpid(pid, &status, WUNTRACED);
-				printf("%d\n", status);
-			}
-		} while (!WIFEXITED(status) && !WIFSIGNALED(status));
-=======
 		if(strcmp(args[size-1], "-&") == 0){
 			printf("[%d]\t%s\n", pid, args[0]);
 		}
 		else
 			pause();
->>>>>>> 71fcbec... child handler and backgrounding
 	}
 
 	return 1;
