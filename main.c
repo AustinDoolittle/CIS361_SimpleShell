@@ -19,6 +19,17 @@ struct node_struct {
   struct node_struct * next;
 };
 
+struct bgnode_struct {
+  int pid;
+  char * name;
+  struct bgnode_struct * next;
+};
+
+struct background_struct {
+  int size;
+  struct bgnode_struct * head;
+};
+
 struct history_struct {
   int size;
   struct node_struct * head;
@@ -38,10 +49,29 @@ int sh_execute(char **args);
 int sh_process(char ** args);
 int history_select(int index);
 void sh_loop();
+void background_add(int pid, char * name);
+int background_check_pid(int pid);
 
 
 struct history_struct * history;
 
+struct background_struct * background;
+
+void sh_child_handler(int sig)
+{
+  pid_t pid;
+  int status;
+
+  pid = wait(&status);
+
+  if(background_check_pid(pid)) {
+    return;
+  }
+  else {
+    printf("Pid %d exited with a status of %d\n", pid, status);
+  }
+
+}
 
 int sh_cd(char **args)
 {
@@ -81,6 +111,53 @@ void config()
   history = malloc(sizeof(struct history_struct));
   history->size = 0;
   history->head = NULL;
+
+  background = malloc(sizeof(struct background_struct));
+  background->size = 0;
+  background->head = NULL;
+}
+
+void background_add(int pid, char * name) {
+  struct bgnode_struct * new = malloc(sizeof(struct bgnode_struct));
+  new->name = name;
+  new->pid = pid;
+  new->next = background->head;
+  background->head = new;
+  
+  background->size++;
+}
+
+int background_check_pid(int pid) {
+  struct bgnode_struct * node = background->head;
+  struct bgnode_struct * prev = NULL;
+  for(int i = 0; i < background->size; i++) {
+    if(node->pid == pid) {
+      //delete from background linked list
+      if(i == 0) {
+        background->head = node->next;
+        free(node);
+      }
+      else {
+        prev->next = node->next;
+        free(node);
+      }
+      return 1;
+    }
+    prev = node;
+    node = node->next;
+  }
+
+  return 0;
+}
+
+int background_print(struct bgnode_struct * node) {
+  if(node == NULL) {
+    return 1;
+  }
+
+  background_print(node->next);
+  printf("[%d]\t%s\n", node->pid, node->name);
+  return 1;
 }
 
 void history_add(char* line)
@@ -157,8 +234,23 @@ int sh_execute(char **args)
 	pid_t pid, wpid;
 	int status;
 
+	signal(SIGCHLD, sh_child_handler);
+	int size = 0;
+
+	for (int i = 0; i < sizeof(args); ++i)
+	{
+		if (args[i] != NULL)
+		{
+			size++;
+		}
+	}
+
 	pid = fork();
 	if (pid == 0) {
+    if(strcmp(args[size-1], "-&") == 0){
+      size--;
+      args[size] = NULL;
+    }
 		if (execvp(args[0], args) == -1) {
 			perror("error with exec");
 		}
@@ -166,21 +258,12 @@ int sh_execute(char **args)
 	} else if (pid < 0) {
 		perror("error forking");
 	} else {
-		do {
-			if(args[1] != NULL){
-				if(strcmp(args[(sizeof(args)/sizeof(char))], "-&") != 0)
-				{
-					wpid = waitpid(pid, &status, WUNTRACED);
-					printf("%d\n", status);
-				}
-				else{
-					printf("%d\n", pid);
-				}
-			}else{
-				wpid = waitpid(pid, &status, WUNTRACED);
-				printf("%d\n", status);
-			}
-		} while (!WIFEXITED(status) && !WIFSIGNALED(status));
+		if(strcmp(args[size-1], "-&") == 0){
+			printf("[%d]\t%s\n", pid, args[0]);
+      background_add(pid, args[0]);
+		}
+		else
+			pause();
 	}
 
 	return 1;
@@ -205,6 +288,9 @@ int sh_process(char ** args) {
     int i = atol(args[1]);
 
     status = history_select(i);
+  }
+  else if(strcmp(args[0], "jobs") == 0) {
+    status = background_print(background->head);
   }
   else{
     status = sh_execute(args);
